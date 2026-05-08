@@ -1339,13 +1339,15 @@
             }
         }
 
-        // ======= DOWNLOAD (Vercel synchronous) =======
+        // ======= DOWNLOAD (Background threading + polling) =======
+        let sessionId = null;
+        let progressInterval = null;
+
         async function startDownload() {
             if (!currentUrl || !selectedFormatId) { showToast('Please select a format', 'error'); return; }
 
-            const convert_mp3 = selectedFormatId === 'bestaudio/best';
             setStep('downloading');
-            document.getElementById('dlStatusText').textContent = 'Downloading... this may take a moment';
+            document.getElementById('dlStatusText').textContent = 'Starting download...';
 
             try {
                 const res = await fetch('/api/download/start', {
@@ -1363,18 +1365,10 @@
                     return;
                 }
 
-                if (data.status === 'completed') {
-                    document.getElementById('doneTitle').textContent = currentInfo.title || 'Download Complete!';
-                    if (data.filename && data.session_id) {
-                        const link = document.getElementById('doneDownloadLink');
-                        link.href = '/api/downloads/' + data.session_id + '/' + encodeURIComponent(data.filename);
-                        link.style.display = 'block';
-                    } else {
-                        document.getElementById('doneDownloadLink').style.display = 'none';
-                    }
-                    setStep('done');
-                    showToast('✅ Download completed!', 'success');
-                }
+                sessionId = data.session_id;
+                document.getElementById('dlStatusText').textContent = 'Downloading...';
+                if (progressInterval) clearInterval(progressInterval);
+                progressInterval = setInterval(pollProgress, 800);
             } catch (err) {
                 document.getElementById('errorMsg').textContent = err.message || 'Download request failed';
                 setStep('error');
@@ -1382,12 +1376,63 @@
             }
         }
 
+        function pollProgress() {
+            if (!sessionId) return;
+            fetch('/api/download/progress/' + sessionId)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) { clearInterval(progressInterval); return; }
+
+                    const pct = Math.round(data.progress);
+                    document.getElementById('dlStatusText').textContent =
+                        data.status === 'downloading'
+                            ? `Downloading... ${pct}%`
+                            : data.status === 'processing'
+                                ? 'Processing...'
+                                : data.status;
+
+                    if (data.status === 'completed') {
+                        clearInterval(progressInterval);
+                        document.getElementById('doneTitle').textContent = currentInfo.title || 'Download Complete!';
+                        if (data.filename) {
+                            const link = document.getElementById('doneDownloadLink');
+                            link.href = '/api/downloads/' + sessionId + '/' + encodeURIComponent(data.filename);
+                            link.style.display = 'block';
+                        } else {
+                            document.getElementById('doneDownloadLink').style.display = 'none';
+                        }
+                        setStep('done');
+                        showToast('✅ Download completed!', 'success');
+                    } else if (data.status === 'error') {
+                        clearInterval(progressInterval);
+                        document.getElementById('errorMsg').textContent = data.error || 'Download failed.';
+                        setStep('error');
+                        showToast('❌ Download failed', 'error');
+                    } else if (data.status === 'cancelled') {
+                        clearInterval(progressInterval);
+                        setStep('ready');
+                        showToast('Cancelled', 'error');
+                    }
+                });
+        }
+
+        function cancelDownload() {
+            if (!sessionId) return;
+            fetch('/api/download/cancel/' + sessionId, { method: 'POST' });
+            showToast('Cancelling...', 'error');
+        }
+
         function resetDownload() {
+            if (progressInterval) clearInterval(progressInterval);
+            if (sessionId) {
+                fetch('/api/cleanup/' + sessionId, { method: 'POST' }).catch(() => { });
+            }
             setStep('home');
             currentUrl = '';
             currentInfo = null;
             currentFormats = [];
             selectedFormatId = null;
+            sessionId = null;
             document.getElementById('urlInput').value = '';
             document.getElementById('clearBtn').style.display = 'none';
             document.getElementById('detectedBadge').classList.add('hidden');
