@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ytdown - Video Downloader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #0a0a0b;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+        }
+
+        .glass-red {
+            background: linear-gradient(135deg, rgba(255, 50, 50, 0.08), rgba(255, 100, 0, 0.04));
+            backdrop-filter: blur(20px);
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .header {
+            padding: 20px 16px 8px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+
+        .header h1 span {
+            color: #ff4444;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid rgba(255, 50, 50, 0.15);
+            background: linear-gradient(135deg, rgba(255, 50, 50, 0.1), rgba(255, 100, 0, 0.05));
+            box-shadow: 0 8px 40px rgba(255, 50, 50, 0.08);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255, 50, 50, 0.15);
+            filter: blur(80px);
+        }
+
+        .hero .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(255, 200, 0, 0.1);
+            color: #f0c000;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .hero h2 {
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 6px;
+            letter-spacing: -1px;
+        }
+
+        .hero p {
+            color: #888;
+            font-size: 12px;
+            font-weight: 500;
+            max-width: 200px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .btn-gradient {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #dc2626, #f97316);
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 8px 30px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-gradient:hover {
+            transform: scale(0.98);
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+        }
+
+        .btn-gradient:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            color: #ccc;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .platform-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 8px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .platform-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 50, 50, 0.2);
+        }
+
+        .platform-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            transition: transform 0.2s;
+        }
+
+        .platform-card:hover .platform-icon {
+            transform: scale(1.1);
+        }
+
+        .platform-name {
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+        }
+
+        .trending-item {
+            display: flex;
+            gap: 12px;
+            padding: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: left;
+        }
+
+        .trending-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .trending-thumb {
+            width: 140px;
+            height: 80px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trending-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .trending-thumb .duration {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 9px;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        .trending-thumb .plat-badge {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .trending-info h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ddd;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .trending-info p {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .url-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 4px 12px;
+            transition: border-color 0.2s;
+        }
+
+        .url-input-wrapper:focus-within {
+            border-color: rgba(255, 50, 50, 0.3);
+        }
+
+        .url-input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 14px 4px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            min-width: 0;
+        }
+
+        .url-input-wrapper input::placeholder {
+            color: #444;
+        }
+
+        .url-input-wrapper .icon-btn {
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            transition: color 0.2s;
+        }
+
+        .url-input-wrapper .icon-btn:hover {
+            color: #aaa;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-row .btn-gradient {
+            flex: 1;
+        }
+
+        .tab-bar {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: #666;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 50, 50, 0.12);
+            color: #ff5555;
+        }
+
+        .tab-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .format-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 6px;
+        }
+
+        .format-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .format-item.selected {
+            background: rgba(255, 50, 50, 0.08);
+            border-color: rgba(255, 50, 50, 0.25);
+        }
+
+        .format-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .format-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .format-icon.video {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+
+        .format-icon.audio {
+            background: rgba(168, 85, 247, 0.1);
+            color: #c084fc;
+        }
+
+        .format-quality {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ddd;
+        }
+
+        .format-meta {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .format-check {
+            color: #ff4444;
+            display: none;
+        }
+
+        .format-item.selected .format-check {
+            display: block;
+        }
+
+        .best-badge {
+            font-size: 9px;
+            font-weight: 700;
+            color: #f97316;
+            background: rgba(249, 115, 22, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+
+        .video-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .video-card .thumb-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .video-card .thumb-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-card .thumb-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+            padding: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .video-card .thumb-overlay .dur {
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .video-card .body {
+            padding: 14px;
+        }
+
+        .video-card .body h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ddd;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-card .body .meta {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            gap: 12px;
+        }
+
+        .progress-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .progress-card .p-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .progress-card .p-header span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ccc;
+        }
+
+        .progress-card .p-header .p-pct {
+            color: #ff4444;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #dc2626, #f97316);
+            transition: width 0.3s;
+            position: relative;
+        }
+
+        .progress-bar .fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.15);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .progress-card .p-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #555;
+        }
+
+        .done-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .done-card .check {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(34, 197, 94, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .done-card .check svg {
+            width: 32px;
+            height: 32px;
+            color: #22c55e;
+        }
+
+        .done-card h3 {
+            color: #22c55e;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .done-card p {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .error-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .error-card .icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255, 50, 50, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .error-card .icon svg {
+            width: 28px;
+            height: 28px;
+            color: #ff4444;
+        }
+
+        .error-card h3 {
+            color: #ff4444;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .error-card p {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .loader-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 0;
+            gap: 16px;
+        }
+
+        .loader-spinner .ring {
+            position: relative;
+            width: 64px;
+            height: 64px;
+        }
+
+        .loader-spinner .ring .spin {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 50, 50, 0.1);
+            border-top-color: #ff4444;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-spinner p {
+            font-size: 13px;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .loader-spinner .sub {
+            font-size: 11px;
+            color: #555;
+        }
+
+        .tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tip-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 8px;
+            background: rgba(255, 50, 50, 0.1);
+            color: #ff4444;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .tip-item p {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1b;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            max-width: 90vw;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.error {
+            border-color: rgba(255, 50, 50, 0.3);
+            color: #ff6666;
+        }
+
+        .toast.success {
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .mt-4 {
+            margin-top: 16px;
+        }
+
+        .skeleton {
+            animation: shimmer 1.5s infinite;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.03) 75%);
+            background-size: 200% 100%;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 11, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            padding: 8px 0 env(safe-area-inset-bottom, 8px);
+            z-index: 50;
+        }
+
+        .nav-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            background: none;
+            border: none;
+            color: #555;
+            font-size: 9px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-btn.active {
+            color: #ff4444;
+        }
+
+        .nav-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>yt<span>down</span></h1>
+        <p>Download videos from 1000+ sites</p>
+    </div>
+
+    <div class="container" id="app">
+        <!-- HOME TAB -->
+        <div id="homeTab">
+            <section>
+                <div class="hero">
+                    <div class="badge">✦ Universal Downloader</div>
+                    <h2>Grab any video<br>in seconds.</h2>
+                    <p>Support for 1000+ sites including YouTube, Facebook, Instagram & TikTok.</p>
+                    <button class="btn-gradient" onclick="showTab('download')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Start Downloading
+                    </button>
+                </div>
+            </section>
+
+            <section>
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                    </svg>
+                    Supported Platforms
+                </div>
+                <div class="platform-grid" id="platformsGrid"></div>
+            </section>
+
+            <section>
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                        <polyline points="17 6 23 6 23 12" />
+                    </svg>
+                    Trending Videos
+                </div>
+                <div id="trendingList"></div>
+            </section>
+        </div>
+
+        <!-- DOWNLOAD TAB -->
+        <div id="downloadTab" class="hidden">
+            <section>
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                    Paste Video Link
+                </div>
+                <div class="url-input-wrapper" id="urlWrapper">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="url" id="urlInput" placeholder="https://youtube.com/watch?v=..." autocomplete="off">
+                    <button class="icon-btn" onclick="clearUrl()" id="clearBtn" style="display:none">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-secondary" onclick="pasteUrl()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="8" y="2" width="8" height="4" rx="1" />
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                        </svg>
+                        Paste
+                    </button>
+                    <button class="btn-gradient" id="fetchBtn" onclick="fetchInfo()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        Fetch Video
+                    </button>
+                </div>
+                <div id="detectedBadge" class="hidden"
+                    style="display:flex;align-items:center;gap:6px;margin-top:8px;margin-left:4px">
+                    <div style="width:6px;height:6px;border-radius:50%;background:#22c55e"></div>
+                    <span style="font-size:11px;color:#666">Detected: <strong id="detectedName"
+                            style="color:#ff4444"></strong></span>
+                </div>
+            </section>
+
+            <!-- Fetching Loader -->
+            <div id="fetchingState" class="hidden">
+                <div class="loader-spinner">
+                    <div class="ring">
+                        <div class="spin"></div>
+                    </div>
+                    <p>Analyzing video...</p>
+                    <span class="sub">Extracting video information</span>
+                </div>
+            </div>
+
+            <!-- Downloading Loader -->
+            <div id="downloadingState" class="hidden">
+                <div class="loader-spinner">
+                    <div class="ring">
+                        <div class="spin"></div>
+                    </div>
+                    <p>Downloading...</p>
+                    <span class="sub" id="dlStatusText">Processing your request</span>
+                </div>
+            </div>
+
+            <!-- Video Info & Formats -->
+            <div id="infoState" class="hidden">
+                <div class="video-card">
+                    <div class="thumb-wrap">
+                        <img id="videoThumb" src="" alt="">
+                        <div class="thumb-overlay">
+                            <span class="dur" id="videoDuration">0:00</span>
+                            <span class="source" id="videoSource" style="color:#ff4444">YouTube</span>
+                        </div>
+                    </div>
+                    <div class="body">
+                        <h3 id="videoTitle">-</h3>
+                        <div class="meta">
+                            <span id="videoAuthor">-</span>
+                            <span id="videoViews">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-bar">
+                    <button class="tab-btn active" onclick="switchTab('video')" id="tabVideo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" />
+                            <line x1="7" y1="2" x2="7" y2="22" />
+                            <line x1="17" y1="2" x2="17" y2="22" />
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <line x1="2" y1="7" x2="7" y2="7" />
+                            <line x1="2" y1="17" x2="7" y2="17" />
+                            <line x1="17" y1="7" x2="22" y2="7" />
+                            <line x1="17" y1="17" x2="22" y2="17" />
+                        </svg>
+                        Video
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('audio')" id="tabAudio">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18V5l12-2v13" />
+                            <circle cx="6" cy="18" r="3" />
+                            <circle cx="18" cy="16" r="3" />
+                        </svg>
+                        Audio
+                    </button>
+                </div>
+
+                <div id="formatsList"></div>
+
+                <div id="downloadBtnWrap">
+                    <button class="btn-gradient mt-4" id="downloadBtn" onclick="startDownload()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Download
+                    </button>
+                </div>
+            </div>
+
+            <!-- Done State -->
+            <div id="doneState" class="hidden">
+                <div class="progress-card done-card">
+                    <div class="check">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                    </div>
+                    <h3>Download Complete!</h3>
+                    <p id="doneTitle">-</p>
+                    <a id="doneDownloadLink" href="#" target="_blank"
+                        style="display:none;width:100%;margin-top:12px;text-decoration:none">
+                        <button class="btn-gradient" style="display:flex">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Save File
+                        </button>
+                    </a>
+                    <button class="btn-secondary mt-4" style="width:100%" onclick="resetDownload()">Download
+                        Another</button>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="hidden">
+                <div class="progress-card error-card">
+                    <div class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                    </div>
+                    <h3>Something went wrong</h3>
+                    <p id="errorMsg">-</p>
+                    <button class="btn-secondary mt-4" onclick="resetDownload()">Try Again</button>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <section id="tipsSection">
+                <div class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                        <circle cx="12" cy="12" r="10" />
+                    </svg>
+                    How to use
+                </div>
+                <div class="tips-list">
+                    <div class="tip-item"><span class="tip-num">1</span>
+                        <p>Copy the video link from YouTube, Facebook, etc.</p>
+                    </div>
+                    <div class="tip-item"><span class="tip-num">2</span>
+                        <p>Paste it in the field above or click Paste</p>
+                    </div>
+                    <div class="tip-item"><span class="tip-num">3</span>
+                        <p>Choose your preferred quality & format</p>
+                    </div>
+                    <div class="tip-item"><span class="tip-num">4</span>
+                        <p>Click Download and enjoy!</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showTab('home')" id="navHome">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            Home
+        </button>
+        <button class="nav-btn" onclick="showTab('download')" id="navDownload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download
+        </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ======= DATA =======
+        const PLATFORMS = [
+            { id: 'youtube', name: 'YouTube', icon: '▶', color: '#ff4444' },
+            { id: 'facebook', name: 'Facebook', icon: 'f', color: '#1877f2' },
+            { id: 'instagram', name: 'Instagram', icon: '◻', color: '#e4405f' },
+            { id: 'tiktok', name: 'TikTok', icon: '♫', color: '#25f4ee' },
+            { id: 'twitter', name: 'Twitter', icon: 'X', color: '#ffffff' },
+            { id: 'reddit', name: 'Reddit', icon: '⊙', color: '#ff4500' },
+            { id: 'vimeo', name: 'Vimeo', icon: 'V', color: '#1ab7ea' },
+            { id: 'twitch', name: 'Twitch', icon: '⚡', color: '#9146ff' },
+        ];
+
+        function getPlatform(id) { return PLATFORMS.find(p => p.id === id); }
+
+        // ======= STATE =======
+        let currentUrl = '';
+        let currentInfo = null;
+        let currentFormats = [];
+        let selectedFormatId = null;
+        let mediaTab = 'video';
+        let currentStep = 'home';
+
+        // ======= INIT =======
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPlatforms();
+            document.getElementById('urlInput').addEventListener('input', onUrlChange);
+            document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchInfo(); });
+        });
+
+        function renderPlatforms() {
+            const grid = document.getElementById('platformsGrid');
+            grid.innerHTML = PLATFORMS.map(p => `
+                <div class="platform-card" onclick="showTab('download')">
+                    <div class="platform-icon" style="background:${p.color}15;color:${p.color}">${p.icon}</div>
+                    <span class="platform-name">${p.name}</span>
+                </div>
+            `).join('');
+        }
+
+        // ======= TAB NAVIGATION =======
+        function showTab(tab) {
+            document.getElementById('homeTab').classList.toggle('hidden', tab !== 'home');
+            document.getElementById('downloadTab').classList.toggle('hidden', tab !== 'download');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('nav' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+        }
+
+        // ======= URL HANDLING =======
+        function onUrlChange() {
+            const url = document.getElementById('urlInput').value.trim();
+            document.getElementById('clearBtn').style.display = url ? 'block' : 'none';
+            const badge = document.getElementById('detectedBadge');
+            const platform = detectPlatform(url);
+            if (platform) {
+                const p = getPlatform(platform);
+                if (p) {
+                    document.getElementById('detectedName').textContent = p.name;
+                    document.getElementById('detectedName').style.color = p.color;
+                    badge.classList.remove('hidden');
+                    return;
+                }
+            }
+            badge.classList.add('hidden');
+        }
+
+        function clearUrl() {
+            document.getElementById('urlInput').value = '';
+            document.getElementById('urlInput').focus();
+            onUrlChange();
+        }
+
+        async function pasteUrl() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('urlInput').value = text;
+                onUrlChange();
+            } catch { showToast('Clipboard access denied', 'error'); }
+        }
+
+        function detectPlatform(url) {
+            const u = url.toLowerCase();
+            if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+            if (u.includes('facebook.com') || u.includes('fb.com')) return 'facebook';
+            if (u.includes('instagram.com')) return 'instagram';
+            if (u.includes('tiktok.com')) return 'tiktok';
+            if (u.includes('twitter.com') || u.includes('x.com')) return 'twitter';
+            if (u.includes('reddit.com')) return 'reddit';
+            if (u.includes('vimeo.com')) return 'vimeo';
+            if (u.includes('twitch.tv')) return 'twitch';
+            return null;
+        }
+
+        // ======= FETCH INFO =======
+        async function fetchInfo() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) { showToast('Please paste a URL first!', 'error'); return; }
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                showToast('Please enter a valid URL', 'error'); return;
+            }
+
+            currentUrl = url;
+            setStep('fetching');
+
+            const btn = document.getElementById('fetchBtn');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+
+                btn.disabled = false;
+
+                if (data.error) { showToast(data.error, 'error'); setStep('home'); return; }
+
+                currentInfo = data;
+                currentFormats = data.formats || [];
+                displayInfo(data);
+                setStep('ready');
+            } catch (err) {
+                btn.disabled = false;
+                showToast('Network error: ' + err.message, 'error');
+                setStep('home');
+            }
+        }
+
+        function displayInfo(data) {
+            document.getElementById('videoThumb').src = data.thumbnail || '';
+            document.getElementById('videoDuration').textContent = data.duration || '0:00';
+            const p = detectPlatform(data.webpage_url || currentUrl);
+            const pc = getPlatform(p);
+            document.getElementById('videoSource').textContent = pc ? pc.name : 'Unknown';
+            document.getElementById('videoSource').style.color = pc ? pc.color : '#ff4444';
+            document.getElementById('videoTitle').textContent = data.title || 'Unknown';
+            document.getElementById('videoAuthor').textContent = data.uploader || 'Unknown';
+            document.getElementById('videoViews').textContent = data.view_count ? `${Number(data.view_count).toLocaleString()} views` : '';
+
+            renderFormats(currentFormats);
+        }
+
+        function renderFormats(formats) {
+            const list = document.getElementById('formatsList');
+            const displayFormats = mediaTab === 'video' ? formats : formats.filter(f => f.format_id === 'bestaudio/best' || !f.has_video);
+
+            list.innerHTML = displayFormats.map(f => {
+                const isVideo = f.has_video !== false && f.format_id !== 'bestaudio/best';
+                const isSelected = selectedFormatId === f.format_id || (!selectedFormatId && f === displayFormats[0]);
+                const isBest = f.format_id === 'bestvideo+bestaudio/best';
+                const isAudio = f.format_id === 'bestaudio/best';
+                const iconClass = isAudio ? 'audio' : 'video';
+
+                if (!selectedFormatId && f === displayFormats[0]) selectedFormatId = f.format_id;
+
+                return `
+                    <div class="format-item ${isSelected ? 'selected' : ''}" onclick="selectFormat('${f.format_id}')">
+                        <div class="format-left">
+                            <div class="format-icon ${iconClass}">${isBest ? '⭐' : (isAudio ? '🎵' : '🎬')}</div>
+                            <div>
+                                <div class="format-quality">
+                                    ${f.label}
+                                    ${isBest ? '<span class="best-badge">BEST</span>' : ''}
+                                </div>
+                                <div class="format-meta">${f.ext || 'mp4'}${f.resolution && f.resolution !== 'Best' ? ' • ' + f.resolution : ''}</div>
+                            </div>
+                        </div>
+                        <span class="format-check">✓</span>
+                    </div>
+                `;
+            }).join('');
+
+            if (!selectedFormatId && displayFormats.length > 0) {
+                selectedFormatId = displayFormats[0].format_id;
+            }
+            updateDownloadBtn();
+        }
+
+        function selectFormat(id) {
+            selectedFormatId = id;
+            renderFormats(currentFormats);
+        }
+
+        function switchTab(tab) {
+            mediaTab = tab;
+            document.getElementById('tabVideo').classList.toggle('active', tab === 'video');
+            document.getElementById('tabAudio').classList.toggle('active', tab === 'audio');
+            selectedFormatId = null;
+            renderFormats(currentFormats);
+        }
+
+        function updateDownloadBtn() {
+            const btn = document.getElementById('downloadBtn');
+            const fmt = currentFormats.find(f => f.format_id === selectedFormatId);
+            if (fmt) {
+                btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download ${fmt.format_id === 'bestaudio/best' ? 'Audio' : 'Video'}${fmt.label ? ' (' + fmt.label.split(' ')[0] + ')' : ''}`;
+            }
+        }
+
+        // ======= DOWNLOAD (Vercel synchronous) =======
+        async function startDownload() {
+            if (!currentUrl || !selectedFormatId) { showToast('Please select a format', 'error'); return; }
+
+            const convert_mp3 = selectedFormatId === 'bestaudio/best';
+            setStep('downloading');
+            document.getElementById('dlStatusText').textContent = 'Downloading... this may take a moment';
+
+            try {
+                const res = await fetch('/api/download/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: currentUrl, format_id: selectedFormatId })
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    document.getElementById('errorMsg').textContent = data.error;
+                    setStep('error');
+                    showToast('❌ ' + data.error, 'error');
+                    return;
+                }
+
+                if (data.status === 'completed') {
+                    document.getElementById('doneTitle').textContent = currentInfo.title || 'Download Complete!';
+                    if (data.filename && data.session_id) {
+                        const link = document.getElementById('doneDownloadLink');
+                        link.href = '/api/downloads/' + data.session_id + '/' + encodeURIComponent(data.filename);
+                        link.style.display = 'block';
+                    } else {
+                        document.getElementById('doneDownloadLink').style.display = 'none';
+                    }
+                    setStep('done');
+                    showToast('✅ Download completed!', 'success');
+                }
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = err.message || 'Download request failed';
+                setStep('error');
+                showToast('❌ ' + (err.message || 'Download failed'), 'error');
+            }
+        }
+
+        function resetDownload() {
+            setStep('home');
+            currentUrl = '';
+            currentInfo = null;
+            currentFormats = [];
+            selectedFormatId = null;
+            document.getElementById('urlInput').value = '';
+            document.getElementById('clearBtn').style.display = 'none';
+            document.getElementById('detectedBadge').classList.add('hidden');
+        }
+
+        // ======= STEP MANAGEMENT =======
+        function setStep(step) {
+            currentStep = step;
+            const states = ['fetchingState', 'infoState', 'downloadingState', 'doneState', 'errorState', 'tipsSection'];
+            states.forEach(s => document.getElementById(s).classList.add('hidden'));
+
+            if (step === 'home') {
+                document.getElementById('tipsSection').classList.remove('hidden');
+                document.getElementById('fetchBtn').disabled = false;
+            }
+            if (step === 'fetching') document.getElementById('fetchingState').classList.remove('hidden');
+            if (step === 'downloading') document.getElementById('downloadingState').classList.remove('hidden');
+            if (step === 'ready') document.getElementById('infoState').classList.remove('hidden');
+            if (step === 'done') document.getElementById('doneState').classList.remove('hidden');
+            if (step === 'error') document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        // ======= TOAST =======
+        function showToast(msg, type = 'info') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type;
+            setTimeout(() => t.classList.add('show'), 10);
+            setTimeout(() => t.classList.remove('show'), 4000);
+        }
+    </script>
+</body>
+
+</html>
