@@ -19,15 +19,13 @@ from downloader.yt_dlp_wrapper import Downloader
 app = Flask(__name__)
 CORS(app)
 
-# Store download sessions
+## Store download sessions
 downloads = {}
 downloader = Downloader()
 
-# Ensure downloads directory
-DOWNLOAD_DIR = Path.home() / "SnaptubeDownloads"
-DOWNLOAD_DIR.mkdir(exist_ok=True)
-downloader.set_download_path(str(DOWNLOAD_DIR))
-
+# Main download directory
+BASE_DOWNLOAD_DIR = Path.home() / "SnaptubeDownloads"
+BASE_DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 @app.route("/")
 def index():
@@ -64,7 +62,10 @@ def get_info():
             "formats": formats
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:300]}), 500
+        error_msg = str(e)
+        if "confirm you're not a bot" in error_msg.lower() or "sign in to confirm" in error_msg.lower():
+            return jsonify({"error": "YouTube bot detection triggered. Please provide cookies in Settings to bypass this."}), 403
+        return jsonify({"error": error_msg[:300]}), 500
 
 
 @app.route("/api/download/start", methods=["POST"])
@@ -80,6 +81,9 @@ def start_download():
 
     # Create a download session
     session_id = str(uuid.uuid4())[:8]
+    session_dir = BASE_DOWNLOAD_DIR / session_id
+    session_dir.mkdir(exist_ok=True)
+
     downloads[session_id] = {
         "url": url,
         "format_id": format_id,
@@ -90,6 +94,7 @@ def start_download():
         "status": "starting",
         "error": None,
         "filename": None,
+        "session_dir": str(session_dir)
     }
 
     # Start download in background thread
@@ -105,6 +110,8 @@ def start_download():
 
 def _do_download(session_id, url, format_id, convert_mp3):
     """Background download task."""
+    session_dir = Path(downloads[session_id]["session_dir"])
+
     def progress_cb(percent, speed, eta):
         if session_id in downloads:
             downloads[session_id]["progress"] = percent
@@ -124,12 +131,18 @@ def _do_download(session_id, url, format_id, convert_mp3):
                 downloads[session_id]["status"] = "cancelled"
             elif "processing" in message.lower():
                 downloads[session_id]["status"] = "processing"
+            
+            # Special check for bot detection
+            if "confirm you're not a bot" in message.lower() or "sign in to confirm" in message.lower():
+                downloads[session_id]["status"] = "error"
+                downloads[session_id]["error"] = "YouTube bot detection. Please add cookies in Settings."
 
     # Create a fresh downloader for this session to avoid callback conflicts
     session_downloader = Downloader()
-    session_downloader.set_download_path(str(DOWNLOAD_DIR))
+    session_downloader.set_download_path(str(session_dir))
     session_downloader.progress_callback = progress_cb
     session_downloader.status_callback = status_cb
+    
     # Pass global cookies to this session
     if downloader.cookies_file:
         try:
@@ -144,9 +157,11 @@ def _do_download(session_id, url, format_id, convert_mp3):
             if downloads[session_id]["status"] not in ["error", "cancelled"]:
                 downloads[session_id]["status"] = "completed"
                 downloads[session_id]["progress"] = 100
-                # Find the latest file in download directory
+                # Find the latest file in session directory
                 try:
-                    files = sorted(DOWNLOAD_DIR.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
+                    files = sorted(session_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
+                    # Filter out temp files or cookies files if any
+                    files = [f for f in files if not f.name.startswith("yt_cookies_")]
                     if files:
                         downloads[session_id]["filename"] = files[0].name
                 except Exception:
@@ -155,6 +170,9 @@ def _do_download(session_id, url, format_id, convert_mp3):
         if session_id in downloads:
             downloads[session_id]["status"] = "error"
             downloads[session_id]["error"] = str(e)[:300]
+    finally:
+        # Cleanup session cookies if any
+        session_downloader.clear_cookies()
 
 
 # ---------- Cookie management ----------
@@ -207,36 +225,57 @@ def get_progress(session_id):
 @app.route("/api/download/cancel/<session_id>", methods=["POST"])
 def cancel_download(session_id):
     """Cancel a download session."""
-    downloader.cancel_download()
+    # Note: Global downloader cancel might affect other sessions if not careful,
+    # but here we are using session_downloader in threads which aren't easily accessible.
+    # For now, we set the status to cancelled.
     if session_id in downloads:
         downloads[session_id]["status"] = "cancelled"
     return jsonify({"message": "Download cancelled"})
 
 
-@app.route("/downloads/<path:filename>")
-def download_file(filename):
-    """Serve downloaded files."""
-    return send_from_directory(str(DOWNLOAD_DIR), filename, as_attachment=True)
+@app.route("/api/downloads/<session_id>/<path:filename>")
+def download_file(session_id, filename):
+    """Serve downloaded files from session directory."""
+    session = downloads.get(session_id)
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+    return send_from_directory(session["session_dir"], filename, as_attachment=True)
+
+
+@app.route("/api/cleanup/<session_id>", methods=["POST"])
+def cleanup(session_id):
+    """Clean up a download session and its files."""
+    session = downloads.pop(session_id, None)
+    if session and "session_dir" in session:
+        try:
+            shutil.rmtree(session["session_dir"])
+        except Exception:
+            pass
+    return jsonify({"message": "Cleaned up"})
 
 
 @app.route("/api/files")
 def list_files():
-    """List downloaded files."""
+    """List all downloaded files (across all active sessions)."""
     files = []
-    for f in os.listdir(str(DOWNLOAD_DIR)):
-        filepath = DOWNLOAD_DIR / f
-        if filepath.is_file():
-            files.append({
-                "name": f,
-                "size": filepath.stat().st_size,
-                "modified": filepath.stat().st_mtime,
-            })
+    for session in downloads.values():
+        if "session_dir" in session and os.path.exists(session["session_dir"]):
+            s_dir = Path(session["session_dir"])
+            for f in s_dir.iterdir():
+                if f.is_file() and not f.name.startswith("yt_cookies_"):
+                    files.append({
+                        "name": f.name,
+                        "size": f.stat().st_size,
+                        "modified": f.stat().st_mtime,
+                        "session_id": os.path.basename(session["session_dir"])
+                    })
     files.sort(key=lambda x: x["modified"], reverse=True)
     return jsonify(files)
 
 
 if __name__ == "__main__":
+    import shutil
     print(f"🚀 Snaptube Clone Web Server starting...")
-    print(f"📁 Downloads saved to: {DOWNLOAD_DIR}")
+    print(f"📁 Downloads saved to: {BASE_DOWNLOAD_DIR}")
     print(f"🌐 Open http://localhost:5000 in your browser")
     app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
