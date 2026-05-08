@@ -28,9 +28,28 @@ class Downloader:
         self._current_download: Optional[yt_dlp.YoutubeDL] = None
         self._cached_info: Optional[Dict] = None
         self._cached_info_url: str = ""
+        self.cookies_file: Optional[str] = None
 
         # Ensure download directory exists
         os.makedirs(self.download_path, exist_ok=True)
+
+    def set_cookies(self, cookies_text: str) -> str:
+        """Save cookies text to a temp file and return the path."""
+        import tempfile
+        fd, path = tempfile.mkstemp(suffix=".txt", prefix="yt_cookies_")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(cookies_text)
+        self.cookies_file = path
+        return path
+
+    def clear_cookies(self):
+        """Remove cookies file if set."""
+        if self.cookies_file and os.path.exists(self.cookies_file):
+            try:
+                os.remove(self.cookies_file)
+            except Exception:
+                pass
+        self.cookies_file = None
 
     def set_download_path(self, path: str):
         """Set custom download directory."""
@@ -83,13 +102,22 @@ class Downloader:
     def get_video_info(self, url: str) -> Optional[Dict[str, Any]]:
         """Fetch video metadata from URL."""
         try:
-            ydl_opts = {
+            ydl_opts: Dict[str, Any] = {
                 "quiet": True,
                 "no_warnings": True,
                 "extract_flat": False,
                 "ignoreerrors": True,
-                "extractor_args": {"youtube": {"skip": ["dash", "hls"]}},
+                "nocheckcertificate": True,
+                "source_address": "0.0.0.0",
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.5",
+                },
+                "extractor_args": {"youtube": {"skip": ["dash", "hls"], "player_client": ["android", "web"]}},
             }
+            if self.cookies_file:
+                ydl_opts["cookiefile"] = self.cookies_file
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
                 return info
@@ -201,7 +229,7 @@ class Downloader:
                 "preferredcodec": "mp3",
             })
 
-        ydl_opts = {
+        ydl_opts: Dict[str, Any] = {
             "format": format_id,
             "outtmpl": output_template,
             "progress_hooks": [self._progress_hook],
@@ -210,8 +238,16 @@ class Downloader:
             "merge_output_format": "mp4",
             "postprocessors": postprocessors,
             "ignoreerrors": True,
-            "extractor_args": {"youtube": {"skip": ["dash", "hls"]}},
+            "nocheckcertificate": True,
+            "source_address": "0.0.0.0",
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.144 Mobile Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+            "extractor_args": {"youtube": {"skip": ["dash", "hls"], "player_client": ["android", "web"]}},
         }
+        if self.cookies_file:
+            ydl_opts["cookiefile"] = self.cookies_file
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -260,8 +296,12 @@ class Downloader:
             "merge_output_format": "mp4",
             "ignoreerrors": True,
             "max_downloads": max_count,
-            "extractor_args": {"youtube": {"skip": ["dash", "hls"]}},
+            "nocheckcertificate": True,
+            "source_address": "0.0.0.0",
+            "extractor_args": {"youtube": {"skip": ["dash", "hls"], "player_client": ["android", "web"]}},
         }
+        if self.cookies_file:
+            ydl_opts["cookiefile"] = self.cookies_file
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:

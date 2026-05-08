@@ -130,6 +130,13 @@ def _do_download(session_id, url, format_id, convert_mp3):
     session_downloader.set_download_path(str(DOWNLOAD_DIR))
     session_downloader.progress_callback = progress_cb
     session_downloader.status_callback = status_cb
+    # Pass global cookies to this session
+    if downloader.cookies_file:
+        try:
+            with open(downloader.cookies_file, "r", encoding="utf-8") as f:
+                session_downloader.set_cookies(f.read())
+        except Exception:
+            pass
 
     try:
         success = session_downloader.download(url, format_id, convert_mp3)
@@ -148,6 +155,36 @@ def _do_download(session_id, url, format_id, convert_mp3):
         if session_id in downloads:
             downloads[session_id]["status"] = "error"
             downloads[session_id]["error"] = str(e)[:300]
+
+
+# ---------- Cookie management ----------
+@app.route("/api/cookies", methods=["GET"])
+def get_cookies_status():
+    """Check if cookies are configured."""
+    return jsonify({"has_cookies": downloader.cookies_file is not None})
+
+
+@app.route("/api/cookies", methods=["POST"])
+def set_cookies():
+    """Set YouTube cookies from pasted text."""
+    data = request.get_json()
+    cookies_text = data.get("cookies", "").strip()
+
+    if not cookies_text:
+        return jsonify({"error": "Cookie text is required"}), 400
+
+    try:
+        path = downloader.set_cookies(cookies_text)
+        return jsonify({"message": "Cookies saved successfully", "path": path})
+    except Exception as e:
+        return jsonify({"error": f"Failed to save cookies: {str(e)[:200]}"}), 500
+
+
+@app.route("/api/cookies", methods=["DELETE"])
+def clear_cookies():
+    """Clear stored cookies."""
+    downloader.clear_cookies()
+    return jsonify({"message": "Cookies cleared"})
 
 
 @app.route("/api/download/progress/<session_id>")

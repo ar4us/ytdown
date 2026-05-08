@@ -2,22 +2,23 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install ffmpeg for audio conversion
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+# Install ffmpeg and CA certificates for SSL
+RUN apt-get update && apt-get install -y ffmpeg ca-certificates && update-ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Copy and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy everything
+COPY . .
 
-# Copy the api app (the Vercel-compatible server)
-COPY api/ api/
-COPY requirements.txt .
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r snaptube-clone/requirements.txt && \
+    pip install --no-cache-dir --upgrade yt-dlp certifi
 
-# Set working directory to api for proper imports
-WORKDIR /app/api
+# Use the threading-based web_app (no timeout limits)
+WORKDIR /app/snaptube-clone
 
-# Expose port
-EXPOSE 10000
+# Hugging Face Spaces uses port 7860
+ENV PORT=7860
+EXPOSE 7860
 
-# Run with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "--workers", "1", "--threads", "4", "--timeout", "300", "index:app"]
+# Run with gunicorn + threads for background downloads
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 0 web_app:app

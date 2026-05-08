@@ -859,9 +859,42 @@
 </head>
 
 <body>
-    <div class="header">
+    <div class="header" style="position:relative">
         <h1>Snap<span>Tube</span></h1>
         <p>Download videos from 1000+ sites</p>
+        <button onclick="toggleCookieModal()" style="position:absolute;top:20px;right:16px;background:none;border:none;color:#555;cursor:pointer;padding:4px" title="YouTube Cookies">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Cookie Modal -->
+    <div id="cookieModal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)toggleCookieModal()">
+        <div style="background:#0a0a0b;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <h3 style="font-size:16px;font-weight:700">YouTube Cookies</h3>
+                <button onclick="toggleCookieModal()" style="background:none;border:none;color:#666;cursor:pointer;font-size:18px">✕</button>
+            </div>
+            <p style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.5">
+                YouTube blocks downloads from cloud servers. Export your cookies from YouTube and paste them below to bypass this.
+            </p>
+            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:12px;margin-bottom:12px">
+                <p style="font-size:11px;color:#666;margin-bottom:4px;font-weight:600">How to get cookies:</p>
+                <ol style="font-size:11px;color:#888;margin-left:16px;line-height:1.6">
+                    <li>Install <a href="https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid" target="_blank" style="color:#ff4444">Get cookies.txt</a> extension</li>
+                    <li>Go to <strong style="color:#ccc">youtube.com</strong> and make sure you're logged in</li>
+                    <li>Click the extension icon → <strong style="color:#ccc">Export</strong></li>
+                    <li>Copy the entire text and paste it below</li>
+                </ol>
+            </div>
+            <textarea id="cookieInput" rows="8" style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px;color:#ccc;font-size:11px;font-family:monospace;resize:vertical;outline:none" placeholder="Paste your cookies.txt here..."></textarea>
+            <div style="display:flex;gap:8px;margin-top:12px">
+                <button onclick="saveCookies()" id="saveCookiesBtn" class="btn-gradient" style="flex:1;padding:12px;font-size:10px">Save Cookies</button>
+                <button onclick="clearCookies()" id="clearCookiesBtn" class="btn-secondary" style="padding:12px;font-size:10px">Clear</button>
+            </div>
+            <div id="cookieStatus" style="margin-top:8px;font-size:11px;color:#666;text-align:center"></div>
+        </div>
     </div>
 
     <div class="container" id="app">
@@ -1534,6 +1567,42 @@
             if (step === 'downloading') document.getElementById('downloadingState').classList.remove('hidden');
             if (step === 'done') document.getElementById('doneState').classList.remove('hidden');
             if (step === 'error') document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        // ======= COOKIES =======
+        function toggleCookieModal() {
+            const modal = document.getElementById('cookieModal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) checkCookieStatus();
+        }
+
+        async function checkCookieStatus() {
+            try {
+                const res = await fetch('/api/cookies');
+                const data = await res.json();
+                document.getElementById('cookieStatus').textContent = data.has_cookies ? '✅ Cookies are set' : 'No cookies configured';
+                document.getElementById('cookieStatus').style.color = data.has_cookies ? '#22c55e' : '#666';
+            } catch { document.getElementById('cookieStatus').textContent = 'Could not check cookie status'; }
+        }
+
+        async function saveCookies() {
+            const text = document.getElementById('cookieInput').value.trim();
+            if (!text) { showToast('Paste your cookies first!', 'error'); return; }
+            const btn = document.getElementById('saveCookiesBtn');
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const res = await fetch('/api/cookies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cookies: text }) });
+                const data = await res.json();
+                if (data.error) { showToast(data.error, 'error'); } else { showToast('✅ Cookies saved!', 'success'); await checkCookieStatus(); }
+            } catch { showToast('Failed to save cookies', 'error'); }
+            btn.disabled = false; btn.innerHTML = 'Save Cookies';
+        }
+
+        async function clearCookies() {
+            await fetch('/api/cookies', { method: 'DELETE' });
+            showToast('Cookies cleared', 'info');
+            document.getElementById('cookieInput').value = '';
+            await checkCookieStatus();
         }
 
         // ======= TOAST =======
